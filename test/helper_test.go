@@ -2,15 +2,16 @@ package test
 
 import (
 	"fmt"
-	"getcharzp.cn/helper"
 	"math/rand"
 	"strconv"
 	"testing"
 	"time"
+
+	"getcharzp.cn/helper"
 )
 
 func TestRandGenerate(t *testing.T) {
-	rand.Seed(time.Now().UnixNano())
+	rand.NewSource(time.Now().UnixNano())
 	s := ""
 	for i := 0; i < 6; i++ {
 		s += strconv.Itoa(rand.Intn(10))
