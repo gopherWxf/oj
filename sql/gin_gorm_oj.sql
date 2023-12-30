@@ -1,19 +1,3 @@
-/*
- Navicat Premium Data Transfer
-
- Source Server         : 192.168.1.8
- Source Server Type    : MySQL
- Source Server Version : 50736
- Source Host           : 192.168.1.8:3306
- Source Schema         : gin_gorm_oj
-
- Target Server Type    : MySQL
- Target Server Version : 50736
- File Encoding         : 65001
-
- Date: 05/05/2022 20:58:56
-*/
-
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 

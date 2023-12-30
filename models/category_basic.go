@@ -5,7 +5,7 @@ import (
 )
 
 type CategoryBasic struct {
-	ID        uint           `gorm:"primarykey;" json:"id"`
+	ID        uint           `gorm:"primary_key;" json:"id"`
 	CreatedAt MyTime         `json:"created_at"`
 	UpdatedAt MyTime         `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index;" json:"deleted_at"`
