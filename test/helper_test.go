@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"getcharzp.cn/helper"
+	"oj/helper"
 )
 
 func TestRandGenerate(t *testing.T) {

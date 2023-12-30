@@ -1,12 +1,13 @@
 package service
 
 import (
-	"getcharzp.cn/define"
-	"getcharzp.cn/models"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+	"oj/define"
+	"oj/models"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 // GetTestCase

@@ -4,7 +4,8 @@ import (
 	"net/smtp"
 	"testing"
 
-	"getcharzp.cn/define"
+	"oj/define"
+
 	"github.com/jordan-wright/email"
 )
 

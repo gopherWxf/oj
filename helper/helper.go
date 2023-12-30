@@ -9,7 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"getcharzp.cn/define"
+	"oj/define"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jordan-wright/email"
 	uuid "github.com/satori/go.uuid"

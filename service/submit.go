@@ -13,9 +13,10 @@ import (
 	"sync"
 	"time"
 
-	"getcharzp.cn/define"
-	"getcharzp.cn/helper"
-	"getcharzp.cn/models"
+	"oj/define"
+	"oj/helper"
+	"oj/models"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )

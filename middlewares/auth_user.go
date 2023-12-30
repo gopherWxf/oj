@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"getcharzp.cn/helper"
+	"oj/helper"
+
 	"github.com/gin-gonic/gin"
 )
 

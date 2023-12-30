@@ -3,7 +3,8 @@ package models
 import (
 	"log"
 
-	"getcharzp.cn/define"
+	"oj/define"
+
 	"github.com/go-redis/redis/v8"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"

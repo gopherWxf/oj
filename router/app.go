@@ -1,9 +1,10 @@
 package router
 
 import (
-	_ "getcharzp.cn/docs"
-	"getcharzp.cn/middlewares"
-	"getcharzp.cn/service"
+	_ "oj/docs"
+	"oj/middlewares"
+	"oj/service"
+
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"

@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"getcharzp.cn/models"
+	"oj/models"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
