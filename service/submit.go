@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -10,7 +11,6 @@ import (
 	"runtime"
 	"strconv"
 	"sync"
-	"syscall"
 	"time"
 
 	"getcharzp.cn/define"
@@ -119,6 +119,8 @@ func Submit(c *gin.Context) {
 	CE := make(chan int)
 	// 答案正确的channel
 	AC := make(chan int)
+	// 运行超时的channel
+	TL := make(chan int)
 
 	// 通过的个数
 	passCount := 0
@@ -142,17 +144,24 @@ func Submit(c *gin.Context) {
 			var bm runtime.MemStats
 			runtime.ReadMemStats(&bm)
 			go func() {
+				defer func() {
+					recover()
+				}()
+				// 定义计时器
+				timer := time.NewTimer(time.Millisecond * time.Duration(pb.MaxRuntime))
 				for {
 					select {
-					case <-time.After(time.Millisecond * time.Duration(pb.MaxRuntime)):
-						_ = syscall.Kill(cmd.Process.Pid, syscall.SIGKILL)
+					case <-timer.C:
+						_ = cmd.Process.Kill()
+						TL <- 1
 						return
 					default:
 						var em runtime.MemStats
 						runtime.ReadMemStats(&em)
-						// 运行超内存
+						//运行超内存
+						fmt.Println(em.Alloc/1024, bm.Alloc/1024, pb.MaxMem, em.Alloc/1024-bm.Alloc/1024)
 						if em.Alloc/1024-(bm.Alloc/1024) > uint64(pb.MaxMem) {
-							_ = syscall.Kill(cmd.Process.Pid, syscall.SIGKILL)
+							_ = cmd.Process.Kill()
 							OOM <- 1
 							return
 						}
@@ -196,14 +205,9 @@ func Submit(c *gin.Context) {
 	case <-AC:
 		msg = "答案正确"
 		sb.Status = 1
-	case <-time.After(time.Millisecond * time.Duration(pb.MaxRuntime)):
-		if passCount == len(pb.TestCases) {
-			sb.Status = 1
-			msg = "答案正确"
-		} else {
-			sb.Status = 3
-			msg = "运行超时"
-		}
+	case <-TL:
+		sb.Status = 3
+		msg = "运行超时"
 	}
 
 	if err = models.DB.Transaction(func(tx *gorm.DB) error {
