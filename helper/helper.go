@@ -2,7 +2,6 @@ package helper
 
 import (
 	"crypto/md5"
-	"crypto/tls"
 	"fmt"
 	"math/rand"
 	"net/smtp"
@@ -68,13 +67,14 @@ func AnalyseToken(tokenString string) (*UserClaims, error) {
 // 发送验证码
 func SendCode(toUserEmail, code string) error {
 	e := email.NewEmail()
-	e.From = "Get <getcharzhaopan@163.com>"
+	e.From = "Wxf <68725032@qq.com>"
 	e.To = []string{toUserEmail}
-	e.Subject = "验证码已发送，请查收"
+	e.Subject = "验证码发送"
 	e.HTML = []byte("您的验证码：<b>" + code + "</b>")
-	return e.SendWithTLS("smtp.163.com:465",
-		smtp.PlainAuth("", "getcharzhaopan@163.com", define.MailPassword, "smtp.163.com"),
-		&tls.Config{InsecureSkipVerify: true, ServerName: "smtp.163.com"})
+	// 返回 EOF 时，关闭SSL重试
+	return e.Send("smtp.qq.com:587",
+		smtp.PlainAuth("", "68725032@qq.com", define.MailPassword, "smtp.qq.com"),
+	)
 }
 
 // GetUUID

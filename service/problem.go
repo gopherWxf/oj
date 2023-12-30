@@ -1,15 +1,16 @@
 package service
 
 import (
+	"log"
+	"net/http"
+	"strconv"
+	"time"
+
 	"getcharzp.cn/define"
 	"getcharzp.cn/helper"
 	"getcharzp.cn/models"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"log"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 // GetProblemList
@@ -157,7 +158,7 @@ func ProblemCreate(c *gin.Context) {
 	data.TestCases = testCaseBasics
 
 	// 创建问题
-	err = models.DB.Create(data).Error
+	err = models.DB.Debug().Create(data).Error
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code": -1,

@@ -142,7 +142,6 @@ func Submit(c *gin.Context) {
 		}()
 	} else {
 		for _, testCase := range pb.TestCases {
-			testCase := testCase
 			go func() {
 				cmd := exec.Command("go", "run", path)
 				var out, stderr bytes.Buffer
