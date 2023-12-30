@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strconv"
 	"sync"
+	"syscall"
 	"time"
 
 	"getcharzp.cn/define"
@@ -102,7 +103,7 @@ func Submit(c *gin.Context) {
 	}
 	// 代码判断
 	pb := new(models.ProblemBasic)
-	err = models.DB.Where("identity = ?", problemIdentity).Preload("TestCases").First(pb).Error
+	err = models.DB.Debug().Where("identity = ?", problemIdentity).Preload("TestCases").First(pb).Error
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code": -1,
@@ -118,8 +119,6 @@ func Submit(c *gin.Context) {
 	CE := make(chan int)
 	// 答案正确的channel
 	AC := make(chan int)
-	// 非法代码的channel
-	EC := make(chan struct{})
 
 	// 通过的个数
 	passCount := 0
@@ -127,69 +126,65 @@ func Submit(c *gin.Context) {
 	// 提示信息
 	var msg string
 
-	// 检查代码的合法性
-	v, err := helper.CheckGoCodeValid(path)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": -1,
-			"msg":  "Code Check Error:" + err.Error(),
-		})
-		return
-	}
-	if !v {
+	for _, testCase := range pb.TestCases {
+		testCase := testCase
 		go func() {
-			EC <- struct{}{}
-		}()
-	} else {
-		for _, testCase := range pb.TestCases {
-			go func() {
-				cmd := exec.Command("go", "run", path)
-				var out, stderr bytes.Buffer
-				cmd.Stderr = &stderr
-				cmd.Stdout = &out
-				stdinPipe, err := cmd.StdinPipe()
-				if err != nil {
-					log.Fatalln(err)
-				}
-				io.WriteString(stdinPipe, testCase.Input+"\n")
+			cmd := exec.Command("go", "run", path)
+			var out, stderr bytes.Buffer
+			cmd.Stderr = &stderr
+			cmd.Stdout = &out
+			stdinPipe, err := cmd.StdinPipe()
+			if err != nil {
+				log.Fatalln(err)
+			}
+			io.WriteString(stdinPipe, testCase.Input+"\n")
 
-				var bm runtime.MemStats
-				runtime.ReadMemStats(&bm)
-				if err := cmd.Run(); err != nil {
-					log.Println(err, stderr.String())
-					if err.Error() == "exit status 2" {
-						msg = stderr.String()
-						CE <- 1
+			var bm runtime.MemStats
+			runtime.ReadMemStats(&bm)
+			go func() {
+				for {
+					select {
+					case <-time.After(time.Millisecond * time.Duration(pb.MaxRuntime)):
+						_ = syscall.Kill(cmd.Process.Pid, syscall.SIGKILL)
 						return
+					default:
+						var em runtime.MemStats
+						runtime.ReadMemStats(&em)
+						// 运行超内存
+						if em.Alloc/1024-(bm.Alloc/1024) > uint64(pb.MaxMem) {
+							_ = syscall.Kill(cmd.Process.Pid, syscall.SIGKILL)
+							OOM <- 1
+							return
+						}
 					}
 				}
-				var em runtime.MemStats
-				runtime.ReadMemStats(&em)
-
-				// 答案错误
-				if testCase.Output != out.String() {
-					WA <- 1
-					return
-				}
-				// 运行超内存
-				if em.Alloc/1024-(bm.Alloc/1024) > uint64(pb.MaxMem) {
-					OOM <- 1
-					return
-				}
-				lock.Lock()
-				passCount++
-				if passCount == len(pb.TestCases) {
-					AC <- 1
-				}
-				lock.Unlock()
 			}()
-		}
+			if err := cmd.Run(); err != nil {
+				log.Println(err, stderr.String())
+				if err.Error() == "exit status 1" {
+					msg = stderr.String()
+					CE <- 1
+					return
+				}
+			}
+
+			// 答案错误
+			if testCase.Output != out.String() {
+				WA <- 1
+				return
+			}
+
+			lock.Lock()
+			passCount++
+			if passCount == len(pb.TestCases) {
+				AC <- 1
+			}
+			lock.Unlock()
+
+		}()
 	}
 
 	select {
-	case <-EC:
-		msg = "无效代码"
-		sb.Status = 6
 	case <-WA:
 		msg = "答案错误"
 		sb.Status = 2
