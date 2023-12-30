@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"net/smtp"
 	"os"
@@ -116,7 +115,7 @@ func CodeSave(code []byte) (string, error) {
 // CheckGoCodeValid
 // 检查golang代码的合法性
 func CheckGoCodeValid(path string) (bool, error) {
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return false, err
 	}

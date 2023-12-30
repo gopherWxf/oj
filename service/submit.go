@@ -3,13 +3,7 @@ package service
 import (
 	"bytes"
 	"errors"
-	"getcharzp.cn/define"
-	"getcharzp.cn/helper"
-	"getcharzp.cn/models"
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os/exec"
@@ -17,6 +11,12 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"getcharzp.cn/define"
+	"getcharzp.cn/helper"
+	"getcharzp.cn/models"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // GetSubmitList
@@ -73,7 +73,7 @@ func GetSubmitList(c *gin.Context) {
 // @Router /user/submit [post]
 func Submit(c *gin.Context) {
 	problemIdentity := c.Query("problem_identity")
-	code, err := ioutil.ReadAll(c.Request.Body)
+	code, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code": -1,
