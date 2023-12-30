@@ -34,9 +34,6 @@ func Router() *gin.Engine {
 	r.GET("/submit-list", service.GetSubmitList)
 	// 分类列表
 	r.GET("/category-list", service.GetCategoryList)
-	// 竞赛列表
-	r.GET("/contest-list", service.GetContestList)
-	r.GET("/contest-detail", service.GetContestDetail)
 
 	// 管理员私有方法
 	authAdmin := r.Group("/admin", middlewares.AuthAdminCheck())
@@ -57,6 +54,5 @@ func Router() *gin.Engine {
 	authUser := r.Group("/user", middlewares.AuthUserCheck())
 	// 代码提交
 	authUser.POST("/submit", service.Submit)
-	authUser.POST("/contest-registration", service.ContestRegistration)
 	return r
 }
