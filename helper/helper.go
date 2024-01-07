@@ -180,7 +180,6 @@ func GetMemory(pid string) int {
 	// 解析输出结果，并转换为整数（单位为KB）
 	memoryUsage := strings.TrimSpace(string(output))
 	if usage, err := strconv.Atoi(memoryUsage); err == nil {
-		fmt.Printf("进程%s的内存使用量：%d KB\n", pid, usage)
 		return usage
 	} else {
 		return -1

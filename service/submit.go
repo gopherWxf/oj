@@ -126,68 +126,71 @@ func Submit(c *gin.Context) {
 	var msg string
 
 	for _, testCase := range pb.TestCases {
-		cmd := exec.Command("go", "run", path)
-		var out, stderr bytes.Buffer
-		cmd.Stderr = &stderr
-		cmd.Stdout = &out
-		stdinPipe, err := cmd.StdinPipe()
-		if err != nil {
-			log.Fatalln(err)
-		}
-		_, _ = io.WriteString(stdinPipe, testCase.Input+"\n")
-
+		testCase := testCase
 		go func() {
-			pid := 0
-			mem := 0
-			for {
-				if cmd.Process != nil {
-					pid = cmd.Process.Pid
-					break
-				}
-				time.Sleep(1 * time.Microsecond)
+			cmd := exec.Command("go", "run", path)
+			var out, stderr bytes.Buffer
+			cmd.Stderr = &stderr
+			cmd.Stdout = &out
+			stdinPipe, err := cmd.StdinPipe()
+			if err != nil {
+				log.Fatalln(err)
 			}
-			// 定义计时器
-			timer := time.NewTimer(time.Millisecond * time.Duration(pb.MaxRuntime))
-			for {
-				select {
-				case <-timer.C:
-					helper.KillProcess(strconv.Itoa(pid))
-					TL <- 1
-					return
-				default:
-					if cmd.Process == nil {
-						return
+			_, _ = io.WriteString(stdinPipe, testCase.Input+"\n")
+
+			go func() {
+				pid := 0
+				mem := 0
+				for {
+					if cmd.Process != nil {
+						pid = cmd.Process.Pid
+						break
 					}
-					mem = helper.Max(mem, helper.GetMemory(strconv.Itoa(pid)))
 					time.Sleep(1 * time.Microsecond)
-					//运行超内存
-					if mem > pb.MaxMem {
+				}
+				// 定义计时器
+				timer := time.NewTimer(time.Millisecond * time.Duration(pb.MaxRuntime))
+				for {
+					select {
+					case <-timer.C:
 						helper.KillProcess(strconv.Itoa(pid))
-						OOM <- 1
+						TL <- 1
 						return
+					default:
+						if cmd.Process == nil {
+							return
+						}
+						mem = helper.Max(mem, helper.GetMemory(strconv.Itoa(pid)))
+						time.Sleep(1 * time.Microsecond)
+						//运行超内存
+						if mem > pb.MaxMem {
+							helper.KillProcess(strconv.Itoa(pid))
+							OOM <- 1
+							return
+						}
 					}
 				}
+			}()
+			if err := cmd.Run(); err != nil {
+				log.Println(err, stderr.String())
+				if err.Error() == "exit status 1" {
+					msg = stderr.String()
+					CE <- 1
+					return
+				}
+			}
+
+			// 答案错误
+			if testCase.Output != out.String() {
+				WA <- 1
+				return
+			}
+
+			passCount++
+			if passCount == len(pb.TestCases) {
+				AC <- 1
 			}
 		}()
-		if err := cmd.Run(); err != nil {
-			log.Println(err, stderr.String())
-			if err.Error() == "exit status 1" {
-				msg = stderr.String()
-				CE <- 1
-				break
-			}
-		}
-
-		// 答案错误
-		if testCase.Output != out.String() {
-			WA <- 1
-			break
-		}
-
-		passCount++
-		if passCount == len(pb.TestCases) {
-			AC <- 1
-		}
 	}
 
 	select {
