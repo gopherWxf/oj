@@ -3,14 +3,11 @@ package service
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os/exec"
-	"runtime"
 	"strconv"
-	"sync"
 	"time"
 
 	"oj/define"
@@ -113,85 +110,84 @@ func Submit(c *gin.Context) {
 		return
 	}
 	// 答案错误的channel
-	WA := make(chan int)
+	WA := make(chan int, 1)
 	// 超内存的channel
-	OOM := make(chan int)
+	OOM := make(chan int, 1)
 	// 编译错误的channel
-	CE := make(chan int)
+	CE := make(chan int, 1)
 	// 答案正确的channel
-	AC := make(chan int)
+	AC := make(chan int, 1)
 	// 运行超时的channel
-	TL := make(chan int)
+	TL := make(chan int, 1)
 
 	// 通过的个数
 	passCount := 0
-	var lock sync.Mutex
 	// 提示信息
 	var msg string
 
 	for _, testCase := range pb.TestCases {
-		testCase := testCase
-		go func() {
-			cmd := exec.Command("go", "run", path)
-			var out, stderr bytes.Buffer
-			cmd.Stderr = &stderr
-			cmd.Stdout = &out
-			stdinPipe, err := cmd.StdinPipe()
-			if err != nil {
-				log.Fatalln(err)
-			}
-			io.WriteString(stdinPipe, testCase.Input+"\n")
+		cmd := exec.Command("go", "run", path)
+		var out, stderr bytes.Buffer
+		cmd.Stderr = &stderr
+		cmd.Stdout = &out
+		stdinPipe, err := cmd.StdinPipe()
+		if err != nil {
+			log.Fatalln(err)
+		}
+		_, _ = io.WriteString(stdinPipe, testCase.Input+"\n")
 
-			var bm runtime.MemStats
-			runtime.ReadMemStats(&bm)
-			go func() {
-				defer func() {
-					recover()
-				}()
-				// 定义计时器
-				timer := time.NewTimer(time.Millisecond * time.Duration(pb.MaxRuntime))
-				for {
-					select {
-					case <-timer.C:
-						_ = cmd.Process.Kill()
-						TL <- 1
+		go func() {
+			pid := 0
+			mem := 0
+			for {
+				if cmd.Process != nil {
+					pid = cmd.Process.Pid
+					break
+				}
+				time.Sleep(1 * time.Microsecond)
+			}
+			// 定义计时器
+			timer := time.NewTimer(time.Millisecond * time.Duration(pb.MaxRuntime))
+			for {
+				select {
+				case <-timer.C:
+					helper.KillProcess(strconv.Itoa(pid))
+					TL <- 1
+					return
+				default:
+					if cmd.Process == nil {
 						return
-					default:
-						var em runtime.MemStats
-						runtime.ReadMemStats(&em)
-						//运行超内存
-						fmt.Println(em.Alloc/1024, bm.Alloc/1024, pb.MaxMem, em.Alloc/1024-bm.Alloc/1024)
-						if em.Alloc/1024-(bm.Alloc/1024) > uint64(pb.MaxMem) {
-							_ = cmd.Process.Kill()
-							OOM <- 1
-							return
-						}
+					}
+					mem = helper.Max(mem, helper.GetMemory(strconv.Itoa(pid)))
+					time.Sleep(1 * time.Microsecond)
+					//运行超内存
+					if mem > pb.MaxMem {
+						helper.KillProcess(strconv.Itoa(pid))
+						OOM <- 1
+						return
 					}
 				}
-			}()
-			if err := cmd.Run(); err != nil {
-				log.Println(err, stderr.String())
-				if err.Error() == "exit status 1" {
-					msg = stderr.String()
-					CE <- 1
-					return
-				}
 			}
-
-			// 答案错误
-			if testCase.Output != out.String() {
-				WA <- 1
-				return
-			}
-
-			lock.Lock()
-			passCount++
-			if passCount == len(pb.TestCases) {
-				AC <- 1
-			}
-			lock.Unlock()
-
 		}()
+		if err := cmd.Run(); err != nil {
+			log.Println(err, stderr.String())
+			if err.Error() == "exit status 1" {
+				msg = stderr.String()
+				CE <- 1
+				break
+			}
+		}
+
+		// 答案错误
+		if testCase.Output != out.String() {
+			WA <- 1
+			break
+		}
+
+		passCount++
+		if passCount == len(pb.TestCases) {
+			AC <- 1
+		}
 	}
 
 	select {

@@ -32,8 +32,6 @@ GIN中文官网：https://gin-gonic.com/zh-cn/docs/
 go get github.com/dgrijalva/jwt-go
 ```
 
-## 配置 
-+ 将 MailPassword 配置到环境变量中
 
 ## 系统模块
 - [x] 用户模块
@@ -51,7 +49,28 @@ go get github.com/dgrijalva/jwt-go
   - [x] 代码的提交及判断
 - [x] 排名模块
   - [x] 排名的列表情况
-- [x] 竞赛模块
-  - [x] 竞赛列表
-  - [x] 竞赛管理
-  - [x] 竞赛报名(缺少报名取消)
+
+# ppt 测试数据 代码  申请表，打印，九号签字，企业实践
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1
