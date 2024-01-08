@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -137,7 +138,6 @@ func Submit(c *gin.Context) {
 				log.Fatalln(err)
 			}
 			_, _ = io.WriteString(stdinPipe, testCase.Input+"\n")
-
 			go func() {
 				pid := 0
 				mem := 0
@@ -182,6 +182,8 @@ func Submit(c *gin.Context) {
 
 			// 答案错误
 			if testCase.Output != out.String() {
+				fmt.Println(testCase.Output)
+				fmt.Println(out.String())
 				WA <- 1
 				return
 			}

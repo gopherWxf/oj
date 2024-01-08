@@ -180,7 +180,7 @@ func GetMemory(pid string) int {
 	// 解析输出结果，并转换为整数（单位为KB）
 	memoryUsage := strings.TrimSpace(string(output))
 	if usage, err := strconv.Atoi(memoryUsage); err == nil {
-		return usage
+		return usage / 1024
 	} else {
 		return -1
 	}
